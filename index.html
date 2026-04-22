@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BEAD Policy Gates — Apr–Jul 2026</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg:       #0e0f11;
+    --bg2:      #15171a;
+    --bg3:      #1c1f23;
+    --border:   #2a2d33;
+    --border2:  #363a42;
+    --text:     #d4d6db;
+    --text2:    #8b8f99;
+    --text3:    #5a5e6a;
+    --now:      #4a9eff;
+
+    --missed:   #e05252;
+    --missed-bg:#2a1515;
+    --missed-b: #5a2020;
+
+    --blocked:  #d4863a;
+    --blocked-bg:#261a0a;
+    --blocked-b:#4a3010;
+
+    --pending:  #4a9eff;
+    --pending-bg:#0a1a2e;
+    --pending-b:#1a3a5e;
+
+    --lutnick:  #9b7fe8;
+    --lutnick-bg:#1a1228;
+    --lutnick-b:#3a2558;
+
+    --holiday:  #52b07a;
+    --holiday-bg:#0a1e12;
+    --holiday-b:#1a3e22;
+
+    --complete: #4ab89a;
+    --complete-bg:#0a1e18;
+    --complete-b:#1a3e30;
+
+    --congress: #8b8f99;
+    --congress-bg:#1a1c20;
+    --congress-b:#2a2d33;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  .header {
+    border-bottom: 1px solid var(--border);
+    padding: 20px 28px 16px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .header-left h1 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: -0.02em;
+    margin-bottom: 3px;
+  }
+  .header-left p {
+    font-size: 11px;
+    color: var(--text3);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .today-badge {
+    background: var(--pending-bg);
+    border: 1px solid var(--pending-b);
+    color: var(--pending);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 3px;
+    letter-spacing: 0.04em;
+  }
+
+  /* ── Legend ── */
+  .legend {
+    padding: 10px 28px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+    align-items: center;
+  }
+  .legend-label {
+    font-size: 10px;
+    color: var(--text3);
+    font-family: 'IBM Plex Mono', monospace;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-right: 4px;
+  }
+  .leg {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: var(--text2);
+    cursor: default;
+  }
+  .leg-pip {
+    width: 8px; height: 8px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  /* ── Main layout ── */
+  .chart-outer {
+    padding: 0 0 40px;
+    overflow-x: auto;
+  }
+  .chart-inner {
+    min-width: 820px;
+  }
+
+  /* ── Track rows ── */
+  .tracks {
+    display: flex;
+  }
+  .track-labels-col {
+    width: 148px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border);
+  }
+  .track-label-spacer {
+    height: 36px; /* matches month-header row */
+    border-bottom: 1px solid var(--border);
+  }
+  .track-label-cell {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0 12px 0 8px;
+    border-bottom: 1px solid var(--border);
+    text-align: right;
+  }
+  .track-label-cell span {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9.5px;
+    color: var(--text3);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    line-height: 1.3;
+  }
+
+  .chart-area {
+    flex: 1;
+    position: relative;
+  }
+
+  /* ── Month header row ── */
+  .month-row {
+    display: grid;
+    height: 36px;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+  .month-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border-right: 1px solid var(--border);
+  }
+  .month-cell:last-child { border-right: none; }
+  .month-cell.current {
+    color: var(--now);
+    background: rgba(74,158,255,0.04);
+  }
+
+  /* ── Grid row (one per track) ── */
+  .grid-row {
+    display: grid;
+    position: relative;
+    border-bottom: 1px solid var(--border);
+  }
+  .grid-row:last-child { border-bottom: none; }
+  .grid-cell {
+    border-right: 1px solid var(--border);
+    position: relative;
+  }
+  .grid-cell:last-child { border-right: none; }
+
+  /* ── Events ── */
+  .event-bar {
+    position: absolute;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    padding: 0 7px;
+    font-size: 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    letter-spacing: 0.01em;
+    z-index: 4;
+    transition: filter 0.12s;
+    border: 1px solid transparent;
+  }
+  .event-bar:hover { filter: brightness(1.15); z-index: 8; }
+
+  .event-dot {
+    position: absolute;
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    border: 2px solid var(--bg);
+    cursor: pointer;
+    z-index: 5;
+    transform: translate(-50%, -50%);
+    transition: transform 0.12s;
+  }
+  .event-dot:hover { transform: translate(-50%, -50%) scale(1.5); z-index: 9; }
+
+  .event-label {
+    position: absolute;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    color: var(--text3);
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 3;
+    transform: translateX(-50%);
+  }
+
+  /* ── Now line ── */
+  .now-line {
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 1px;
+    background: var(--now);
+    opacity: 0.6;
+    z-index: 10;
+    pointer-events: none;
+  }
+  .now-line::before {
+    content: 'TODAY';
+    position: absolute;
+    top: -26px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    color: var(--now);
+    letter-spacing: 0.1em;
+    white-space: nowrap;
+  }
+  .now-line::after {
+    content: 'APR 22';
+    position: absolute;
+    top: -14px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    color: var(--now);
+    opacity: 0.7;
+    white-space: nowrap;
+  }
+
+  /* ── Tooltip ── */
+  .tooltip {
+    position: fixed;
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 14px 16px;
+    max-width: 300px;
+    z-index: 999;
+    pointer-events: none;
+    display: none;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+  }
+  .tooltip.show { display: block; }
+  .tt-status {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 2px;
+  }
+  .tt-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 3px;
+    line-height: 1.3;
+  }
+  .tt-date {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--text3);
+    margin-bottom: 8px;
+    letter-spacing: 0.02em;
+  }
+  .tt-body {
+    font-size: 11.5px;
+    color: var(--text2);
+    line-height: 1.6;
+    margin-bottom: 0;
+  }
+  .tt-quote {
+    margin-top: 10px;
+    padding: 7px 10px;
+    border-left: 2px solid var(--border2);
+    font-size: 11px;
+    color: var(--text2);
+    font-style: italic;
+    line-height: 1.5;
+    background: var(--bg3);
+    border-radius: 0 3px 3px 0;
+  }
+  .tt-source {
+    margin-top: 8px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    color: var(--text3);
+    letter-spacing: 0.04em;
+  }
+
+  /* ── Bottom annotation ── */
+  .annotation-strip {
+    border-top: 1px solid var(--border);
+    padding: 14px 28px;
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .annotation {
+    flex: 1;
+    min-width: 220px;
+    padding: 10px 14px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+  }
+  .annotation-head {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text3);
+    margin-bottom: 5px;
+  }
+  .annotation-body {
+    font-size: 11.5px;
+    color: var(--text2);
+    line-height: 1.55;
+  }
+  .annotation-body strong {
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  .footer-bar {
+    border-top: 1px solid var(--border);
+    padding: 10px 28px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    color: var(--text3);
+    letter-spacing: 0.04em;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>BEAD Policy Gates — EO 14365 Dependency Chain</h1>
+    <p>Dec 2025 → Jul 2026 &nbsp;·&nbsp; All deadlines sourced from primary record &nbsp;·&nbsp; Hover any event for detail</p>
+  </div>
+  <div class="header-right">
+    <span class="today-badge">TODAY: APR 22, 2026</span>
+  </div>
+</div>
+
+<div class="legend">
+  <span class="legend-label">status</span>
+  <span class="leg"><span class="leg-pip" style="background:var(--missed)"></span>Missed / overdue</span>
+  <span class="leg"><span class="leg-pip" style="background:var(--blocked)"></span>Blocked / stalled</span>
+  <span class="leg"><span class="leg-pip" style="background:var(--pending)"></span>Pending / projected</span>
+  <span class="leg"><span class="leg-pip" style="background:var(--lutnick)"></span>Lutnick testimony</span>
+  <span class="leg"><span class="leg-pip" style="background:var(--complete)"></span>Completed</span>
+  <span class="leg"><span class="leg-pip" style="background:var(--holiday)"></span>Holiday window</span>
+  <span class="leg"><span class="leg-pip" style="background:var(--congress)"></span>Congress / hearings</span>
+</div>
+
+<div class="chart-outer">
+  <div class="chart-inner">
+    <div class="tracks">
+      <!-- Labels column -->
+      <div class="track-labels-col" id="labelsCol"></div>
+      <!-- Chart area -->
+      <div class="chart-area" id="chartArea"></div>
+    </div>
+  </div>
+</div>
+
+<div class="annotation-strip">
+  <div class="annotation">
+    <div class="annotation-head">The dependency chain problem</div>
+    <div class="annotation-body">EO 14365 created a 4-step sequential lock: <strong>DOJ list (§3) → Commerce eval (§4) → NTIA policy notice (§5a) → FCC proceeding (§6)</strong>. The §3 DOJ list — the legal predicate for everything downstream — was due ~Jan 10 and has never published. Every gate downstream is frozen at step one.</div>
+  </div>
+  <div class="annotation">
+    <div class="annotation-head">Lutnick's three deadlines</div>
+    <div class="annotation-body">Three sequentially slipped commitments: <strong>"Shortly"</strong> (Feb testimony) → <strong>March 11</strong> (staff-stated, missed) → <strong>"Two months"</strong> (Apr 22 testimony = late June). Each offered without acknowledging the prior miss. Q3 2026 remains the structurally grounded estimate absent direct Secretary intervention in Commerce GC clearance.</div>
+  </div>
+  <div class="annotation">
+    <div class="annotation-head">The $21B framing trap</div>
+    <div class="annotation-body">"We've executed universal broadband for $21B" (Lutnick, Feb + Apr hearings) conflates <strong>grant agreement execution</strong> with broadband deployment. No fiber is in the ground. The $21B is a nondeployment savings pool — not surplus over a completed goal. This framing is load-bearing for the argument that the pool can fund "other things exceptional for America."</div>
+  </div>
+</div>
+
+<div class="footer-bar">
+  <span>Sources: EO 14365 (Dec 11, 2025) · NTIA record · Lutnick CJS testimony (Feb 10 + Apr 22, 2026) · 2RPN Pathway Analysis (Mar 20, 2026) · BEAD FAQs v17–v20</span>
+  <span>Ready.net Policy Analysis · Internal use · Apr 22, 2026</span>
+</div>
+
+<div class="tooltip" id="tooltip">
+  <span class="tt-status" id="tt-status"></span>
+  <div class="tt-title" id="tt-title"></div>
+  <div class="tt-date" id="tt-date"></div>
+  <div class="tt-body" id="tt-body"></div>
+  <div class="tt-quote" id="tt-quote" style="display:none"></div>
+  <div class="tt-source" id="tt-source"></div>
+</div>
+
+<script>
+// ── Time math ──────────────────────────────────────────────────────────────
+const START = new Date('2025-12-01');
+const END   = new Date('2026-07-31');
+const SPAN  = END - START;
+
+function pct(dateStr) {
+  return ((new Date(dateStr) - START) / SPAN) * 100;
+}
+function pctSpan(d1, d2) {
+  return pct(d2) - pct(d1);
+}
+
+// ── Track definitions ──────────────────────────────────────────────────────
+// rowH: pixel height of the track row
+const TRACKS = [
+  { id: 'eo',       label: 'EO 14365\ndependency chain', rowH: 72 },
+  { id: 'ntia',     label: 'NTIA / 2RPN\nmilestones',    rowH: 60 },
+  { id: 'lutnick',  label: 'Lutnick\ntestimony',         rowH: 52 },
+  { id: 'congress', label: 'Congress /\nhearings',       rowH: 52 },
+  { id: 'holidays', label: 'Holidays /\npolitical windows', rowH: 52 },
+];
+
+// ── Month definitions (Dec 2025 → Jul 2026 = 8 months) ────────────────────
+const MONTHS = [
+  { label: "DEC '25", start: '2025-12-01', end: '2026-01-01', current: false },
+  { label: "JAN '26", start: '2026-01-01', end: '2026-02-01', current: false },
+  { label: "FEB",     start: '2026-02-01', end: '2026-03-01', current: false },
+  { label: "MAR",     start: '2026-03-01', end: '2026-04-01', current: false },
+  { label: "APR",     start: '2026-04-01', end: '2026-05-01', current: true  },
+  { label: "MAY",     start: '2026-05-01', end: '2026-06-01', current: false },
+  { label: "JUN",     start: '2026-06-01', end: '2026-07-01', current: false },
+  { label: "JUL",     start: '2026-07-01', end: '2026-08-01', current: false },
+];
+
+// ── Event data ─────────────────────────────────────────────────────────────
+// type: 'bar' | 'dot'
+// For bars: from, to (dates), vertical: top offset % within row, h: height px
+// For dots: at (date), vertical: top % within row
+
+const EVENTS = {
+  eo: [
+    {
+      type: 'bar', from: '2025-12-11', to: '2025-12-13',
+      top: 18, h: 22, cls: 'complete', label: 'EO 14365 signed',
+      status: 'COMPLETED', statusColor: 'var(--complete)', statusBg: 'var(--complete-bg)',
+      title: 'EO 14365 signed',
+      date: 'Dec 11, 2025',
+      body: 'Executive Order 14365 directs NTIA to condition BEAD nondeployment fund access on states not having "onerous" AI laws. Establishes a 4-step sequential dependency chain — §3 DOJ list → §4 Commerce eval → §5(a) NTIA policy notice → §6 FCC proceeding. All deadlines ~90 days out from signing. David Sacks and Sriram Krishnan named as present at signing.',
+      quote: null,
+      source: 'EO 14365, Dec 11, 2025'
+    },
+    {
+      type: 'dot', at: '2026-01-10',
+      top: 50, cls: 'missed',
+      label: '§3 DOJ list',
+      status: 'MISSED — NOT PUBLISHED', statusColor: 'var(--missed)', statusBg: 'var(--missed-bg)',
+      title: 'EO §3 — DOJ "onerous state" list',
+      date: '~Jan 10, 2026 — OVERDUE',
+      body: 'DOJ AI Litigation Task Force required to publish list of states with "onerous" AI laws. This is the legal predicate for every downstream gate — without it, NTIA cannot write a defensible AI compliance condition. As of Apr 22, 2026: not published. Primary blockage in the entire chain.',
+      quote: null,
+      source: 'EO 14365 §3 · 2RPN Pathway Analysis, Mar 20, 2026'
+    },
+    {
+      type: 'dot', at: '2026-03-11',
+      top: 28, cls: 'missed',
+      label: '§4 Commerce eval',
+      status: 'MISSED — NOT PUBLISHED', statusColor: 'var(--missed)', statusBg: 'var(--missed-bg)',
+      title: 'EO §4 — Commerce evaluation of state AI laws',
+      date: '~Mar 11, 2026 — OVERDUE',
+      body: 'Secretary of Commerce required to publish evaluation of onerous state AI laws. Cannot proceed until DOJ §3 list exists. Commerce GC review in active stall — "war of attrition" dynamic where GC\'s cost of holding is structurally lower than the White House\'s. As of Apr 22, 2026: not published.',
+      quote: null,
+      source: 'EO 14365 §4 · BEAD_Tension_Framework_Memo'
+    },
+    {
+      type: 'dot', at: '2026-03-11',
+      top: 52, cls: 'missed',
+      label: '§5(a) NTIA notice',
+      status: 'MISSED — NOT PUBLISHED', statusColor: 'var(--missed)', statusBg: 'var(--missed-bg)',
+      title: 'EO §5(a) — BEAD nondeployment policy notice (2RPN)',
+      date: '~Mar 11, 2026 — OVERDUE',
+      body: 'NTIA required to issue policy notice conditioning BEAD fund access on state AI law compliance. Critical qualifier: "to the maximum extent allowed by Federal law" — inserted because WH legal counsel knew the conditioning mechanism was legally vulnerable (Spending Clause, major questions doctrine). Commerce GC has been requiring NTIA to demonstrate IIJA §60102 compliance before clearing. Not published.',
+      quote: '"[The EO AI conditioning] pertains to the BEAD savings. So they\'re two separate issues." — Roth, State of the Net, Feb 2026',
+      source: 'EO 14365 §5(a) · IIJA §60102 · Roth, SOTN Feb 2026'
+    },
+    {
+      type: 'dot', at: '2026-06-10',
+      top: 40, cls: 'blocked',
+      label: '§6 FCC proceeding',
+      status: 'BLOCKED — PREREQUISITE UNMET', statusColor: 'var(--blocked)', statusBg: 'var(--blocked-bg)',
+      title: 'EO §6 — FCC AI preemption proceeding',
+      date: '~June 2026 — prerequisite unmet',
+      body: 'FCC initiates AI disclosure/preemption proceeding, triggered 90 days after §4 publication. Since §4 has not published, this gate cannot open. Estimated trigger window: if §4 published in April, FCC proceeding would open ~July 2026.',
+      quote: null,
+      source: 'EO 14365 §6 · 2RPN Pathway Analysis'
+    },
+  ],
+
+  ntia: [
+    {
+      type: 'bar', from: '2026-02-10', to: '2026-02-19',
+      top: 12, h: 22, cls: 'complete', label: 'Public listening sessions',
+      status: 'COMPLETED', statusColor: 'var(--complete)', statusBg: 'var(--complete-bg)',
+      title: 'NTIA public listening sessions',
+      date: 'Feb 10–18, 2026',
+      body: '~1,700 attendees, 188 written comments, 175 speakers across two public Zoom sessions (Feb 10 & 18) and one in-person SBO session at BEAD Winter Summit. Lutnick later cited "over 1,000 attendees, 280 comments" — numbers that don\'t match Roth\'s own figures from the same events.',
+      quote: null,
+      source: 'NTIA_Key_Session_Summaries · Roth, BEAD Winter Summit'
+    },
+    {
+      type: 'dot', at: '2026-03-11',
+      top: 50, cls: 'missed',
+      label: 'NTIA staff deadline',
+      status: 'MISSED', statusColor: 'var(--missed)', statusBg: 'var(--missed-bg)',
+      title: 'NTIA staff-stated guidance deadline',
+      date: 'Mar 11, 2026 — MISSED',
+      body: 'NTIA staff indicated guidance by this date at the Feb hearing. Not issued. Roth published a brief statement citing "additional time needed." Same day: Pallone letter entered administrative record, strengthening Commerce GC\'s institutional incentive to hold review. This is Lutnick deadline #2 of 3.',
+      quote: '"We need additional time." — Roth public statement, Mar 11, 2026',
+      source: 'NTIA record · Pallone letter, Mar 11, 2026'
+    },
+    {
+      type: 'dot', at: '2026-03-20',
+      top: 30, cls: 'complete',
+      label: 'WH AI legislative recs',
+      status: 'COMPLETED', statusColor: 'var(--complete)', statusBg: 'var(--complete-bg)',
+      title: 'White House AI legislative recommendations (EO §8)',
+      date: 'Mar 20, 2026',
+      body: 'EO §8 deliverable published. Admin\'s formal ask to Congress to codify EO 14365 preemption via statute. Explicit carve-outs for child safety, fraud, consumer protection, state procurement. Does NOT accelerate the administrative 2RPN track — EO-sourced conditioning and statutory preemption are running simultaneously, on very different timelines.',
+      quote: null,
+      source: 'WH AI Legislative Recommendations, Mar 20, 2026 · 2RPN Pathway Analysis'
+    },
+    {
+      type: 'bar', from: '2026-06-15', to: '2026-07-20',
+      top: 28, h: 22, cls: 'pending', label: '2RPN release window (est.)',
+      status: 'PROJECTED — Q3 2026', statusColor: 'var(--pending)', statusBg: 'var(--pending-bg)',
+      title: '2RPN — projected release window',
+      date: 'Est. late June – July 2026',
+      body: 'Structurally grounded estimate. Requires: (1) DOJ §3 list publication, (2) Commerce GC clearance, (3) WH AI conditioning sign-off. None publicly reported as resolved as of Apr 22. Lutnick\'s "two months" from Apr 22 puts the outer bound at ~late June — aligning with this window. Q3 remains the grounded estimate absent direct Secretary intervention overriding GC attrition.',
+      quote: null,
+      source: '2RPN Pathway Analysis, Mar 20, 2026 · Lutnick Apr 22 testimony'
+    },
+  ],
+
+  lutnick: [
+    {
+      type: 'dot', at: '2026-02-10',
+      top: 50, cls: 'lutnick',
+      label: '"Shortly" (deadline 1)',
+      status: 'TESTIMONY — DEADLINE 1 OF 3', statusColor: 'var(--lutnick)', statusBg: 'var(--lutnick-bg)',
+      title: 'Lutnick Senate CJS testimony #1',
+      date: 'Feb 10, 2026',
+      body: 'Commerce-Justice-Science Appropriations Subcommittee. Made six substantive broadband claims. Claimed guidance coming "shortly." Claimed unfamiliarity with how EO 14365 aligns with BEAD statute — despite EO §5(a) directly naming Commerce. Conflated grant execution with broadband deployment ("46 states signed and are drawing money").',
+      quote: '"It\'s going to come shortly." — Lutnick to Sen. Shaheen, Feb 10, 2026',
+      source: 'CJS Subcommittee hearing, Feb 10, 2026'
+    },
+    {
+      type: 'bar', from: '2026-02-10', to: '2026-03-10',
+      top: 24, h: 14, cls: 'missed', label: 'deadline 1 window',
+      status: 'SLIPPED', statusColor: 'var(--missed)', statusBg: 'var(--missed-bg)',
+      title: '"Shortly" — slipped window',
+      date: 'Feb 10 → Mar 11, 2026',
+      body: '"Shortly" implied guidance within weeks of the Feb 10 hearing. The staff-stated Mar 11 deadline was the implicit endpoint. Not met.',
+      quote: null,
+      source: 'CJS testimony record'
+    },
+    {
+      type: 'dot', at: '2026-04-22',
+      top: 50, cls: 'lutnick',
+      label: '"Two months" (deadline 3)',
+      status: 'TESTIMONY — DEADLINE 3 OF 3', statusColor: 'var(--lutnick)', statusBg: 'var(--lutnick-bg)',
+      title: 'Lutnick Senate CJS testimony #2 — TODAY',
+      date: 'Apr 22, 2026',
+      body: 'Third hearing on BEAD. "Two months" puts guidance at ~late June 2026. This is the third sequentially slipped deadline with no acknowledgment of the prior misses. Archive\'s game theory analysis: "A clean June 2026 release is possible only if Lutnick intervenes directly in the clearance process or the AI conditioning requirement is quietly dropped. Q3 2026 remains the structurally grounded estimate."',
+      quote: '"I would expect over the next two months we will have our plan in place." — Lutnick to Sen. Shaheen, Apr 22, 2026',
+      source: 'CJS Subcommittee hearing, Apr 22, 2026 · BEAD_Honesty_Audit'
+    },
+    {
+      type: 'bar', from: '2026-04-22', to: '2026-06-22',
+      top: 24, h: 14, cls: 'pending', label: '"two months" window',
+      status: 'ACTIVE WINDOW', statusColor: 'var(--pending)', statusBg: 'var(--pending-bg)',
+      title: 'Lutnick "two months" window',
+      date: 'Apr 22 → ~Jun 22, 2026',
+      body: 'The outer bound of Lutnick\'s Apr 22 "two months" commitment. Overlaps with Memorial Day weekend (~May 26) and approaches July 4th. Structurally implausible unless upstream prerequisites resolve — but politically motivated to hit before July 4 / America@250.',
+      quote: null,
+      source: 'CJS Apr 22 testimony · 2RPN Pathway Analysis'
+    },
+  ],
+
+  congress: [
+    {
+      type: 'dot', at: '2026-02-10',
+      top: 40, cls: 'congress',
+      label: 'CJS hearing #1',
+      status: 'HEARING', statusColor: 'var(--congress)', statusBg: 'var(--congress-bg)',
+      title: 'Senate CJS Appropriations — BEAD hearing #1',
+      date: 'Feb 10, 2026',
+      body: 'Commerce-Justice-Science Appropriations Subcommittee. Senators Fischer (NE), Shaheen (NH), Capito (WV), Schatz (HI) pressed Lutnick on deployment numbers, unserved populations, and the §21B pool. Fischer flagged Nebraska\'s allocation cut from $405M to $45M. Shaheen noted only $18.6M of ~$200M awarded for deployment.',
+      quote: null,
+      source: 'CJS Subcommittee record, Feb 10, 2026'
+    },
+    {
+      type: 'bar', from: '2025-12-11', to: '2026-01-04',
+      top: 14, h: 22, cls: 'congress', label: 'Congressional recess (holiday)',
+      status: 'RECESS', statusColor: 'var(--congress)', statusBg: 'var(--congress-bg)',
+      title: 'Congressional holiday recess',
+      date: 'Dec 2025 – early Jan 2026',
+      body: 'EO 14365 was signed Dec 11 — 90-day deadlines clocked through the holiday recess. Administrative momentum at seasonal low. DOJ §3 list was due ~Jan 10, five days after Congress returned.',
+      quote: null,
+      source: 'Congressional calendar'
+    },
+    {
+      type: 'dot', at: '2026-04-22',
+      top: 40, cls: 'congress',
+      label: 'CJS hearing #2',
+      status: 'HEARING — TODAY', statusColor: 'var(--congress)', statusBg: 'var(--congress-bg)',
+      title: 'Senate CJS Appropriations — BEAD hearing #2',
+      date: 'Apr 22, 2026 — TODAY',
+      body: 'Lutnick\'s third BEAD hearing overall. Senators Moran (KS), Fischer (NE), Shaheen (NH), Schatz (HI), Capito (WV) all raised unresolved concerns in real time. Moran said he was "absolutely certain" there are still unserved Kansans. Schatz flagged Hawaii\'s structural middle-mile gap. Lutnick\'s "two months" is the third slipped deadline.',
+      quote: null,
+      source: 'CJS Subcommittee record, Apr 22, 2026'
+    },
+    {
+      type: 'bar', from: '2026-05-25', to: '2026-06-01',
+      top: 14, h: 22, cls: 'congress', label: 'Memorial Day recess',
+      status: 'RECESS', statusColor: 'var(--congress)', statusBg: 'var(--congress-bg)',
+      title: 'Congressional Memorial Day recess',
+      date: 'May 25 – May 30, 2026',
+      body: 'Congress typically recesses over Memorial Day weekend. Any floor activity or hearing scheduling paused. A 2RPN release during recess would reduce Senate Commerce Committee scrutiny in the immediate news cycle.',
+      quote: null,
+      source: 'Congressional calendar'
+    },
+  ],
+
+  holidays: [
+    {
+      type: 'bar', from: '2025-12-24', to: '2026-01-02',
+      top: 14, h: 22, cls: 'holiday', label: 'Dec holiday season',
+      status: 'HOLIDAY', statusColor: 'var(--holiday)', statusBg: 'var(--holiday-bg)',
+      title: 'December holiday season',
+      date: 'Dec 24, 2025 – Jan 2, 2026',
+      body: 'EO 14365 signed Dec 11. The 90-day clock for all four EO deliverables runs through this holiday window. DOJ §3 list was due ~Jan 10 — five business days after the holiday season ended. Administrative inertia at maximum.',
+      quote: null,
+      source: null
+    },
+    {
+      type: 'bar', from: '2026-05-23', to: '2026-05-27',
+      top: 14, h: 22, cls: 'holiday', label: 'Memorial Day (~30 days)',
+      status: 'POLITICAL WINDOW — ~30 DAYS', statusColor: 'var(--holiday)', statusBg: 'var(--holiday-bg)',
+      title: 'Memorial Day weekend',
+      date: 'May 23–26, 2026 (~30 days from today)',
+      body: 'Prime political bump window. ~30 days from Apr 22 — the near end of Lutnick\'s "two months" window. A 2RPN announcement timed to Memorial Day weekend would be symbolically potent (honoring rural Americans) but structurally implausible given unresolved upstream prerequisites as of today. Too tight for Commerce GC clearance under normal attrition dynamics.',
+      quote: null,
+      source: null
+    },
+    {
+      type: 'bar', from: '2026-07-03', to: '2026-07-07',
+      top: 14, h: 22, cls: 'holiday', label: 'July 4th / America@250 (~70 days)',
+      status: 'POLITICAL WINDOW — ~70 DAYS', statusColor: 'var(--holiday)', statusBg: 'var(--holiday-bg)',
+      title: 'Independence Day / America @ 250',
+      date: 'Jul 4, 2026 (~70 days from today)',
+      body: 'America\'s 250th anniversary. Maximum political packaging opportunity — a 2RPN announcing "$21B deployed for American connectivity and AI leadership" would land in the most symbolically resonant news cycle of the year. Aligns with the outer bound of Lutnick\'s "two months" commitment. If the 2RPN drops before July 4, this is the most plausible forcing mechanism for an accelerated clearance. Matches 2RPN estimated release window.',
+      quote: null,
+      source: null
+    },
+  ],
+};
+
+// ── Build DOM ──────────────────────────────────────────────────────────────
+function build() {
+  const labelsCol  = document.getElementById('labelsCol');
+  const chartArea  = document.getElementById('chartArea');
+
+  // Month header row
+  const monthRowLabels = document.createElement('div');
+  monthRowLabels.className = 'track-label-spacer';
+  labelsCol.appendChild(monthRowLabels);
+
+  const monthRow = document.createElement('div');
+  monthRow.className = 'month-row';
+  monthRow.style.gridTemplateColumns = `repeat(${MONTHS.length}, 1fr)`;
+  MONTHS.forEach(m => {
+    const cell = document.createElement('div');
+    cell.className = 'month-cell' + (m.current ? ' current' : '');
+    cell.textContent = m.label;
+    monthRow.appendChild(cell);
+  });
+  chartArea.appendChild(monthRow);
+
+  // For each track
+  TRACKS.forEach(track => {
+    // Label cell
+    const lc = document.createElement('div');
+    lc.className = 'track-label-cell';
+    lc.style.height = track.rowH + 'px';
+    lc.innerHTML = `<span>${track.label.replace('\n', '<br>')}</span>`;
+    labelsCol.appendChild(lc);
+
+    // Grid row
+    const row = document.createElement('div');
+    row.className = 'grid-row';
+    row.style.gridTemplateColumns = `repeat(${MONTHS.length}, 1fr)`;
+    row.style.height = track.rowH + 'px';
+    MONTHS.forEach(() => {
+      const cell = document.createElement('div');
+      cell.className = 'grid-cell';
+      row.appendChild(cell);
+    });
+
+    // Render events
+    const evs = EVENTS[track.id] || [];
+    evs.forEach(ev => {
+      if (ev.type === 'bar') {
+        const el = document.createElement('div');
+        el.className = 'event-bar';
+        const left = pct(ev.from);
+        const width = pctSpan(ev.from, ev.to);
+        el.style.left   = left + '%';
+        el.style.width  = Math.max(width, 0.5) + '%';
+        el.style.top    = ev.top + 'px';
+        el.style.height = ev.h + 'px';
+        applyBarStyle(el, ev.cls);
+        el.textContent = ev.label;
+        attachTooltip(el, ev);
+        row.appendChild(el);
+      } else if (ev.type === 'dot') {
+        const dot = document.createElement('div');
+        dot.className = 'event-dot';
+        dot.style.left = pct(ev.at) + '%';
+        dot.style.top  = ev.top + 'px';
+        applyDotStyle(dot, ev.cls);
+        attachTooltip(dot, ev);
+        row.appendChild(dot);
+
+        // Tiny label below dot
+        const lbl = document.createElement('div');
+        lbl.className = 'event-label';
+        lbl.style.left = pct(ev.at) + '%';
+        lbl.style.top  = (ev.top + 12) + 'px';
+        lbl.textContent = ev.label;
+        row.appendChild(lbl);
+      }
+    });
+
+    chartArea.appendChild(row);
+  });
+
+  // Now line
+  const nowLine = document.createElement('div');
+  nowLine.className = 'now-line';
+  nowLine.style.left = pct('2026-04-22') + '%';
+  // Position it to span all rows below month header
+  const totalH = TRACKS.reduce((s, t) => s + t.rowH, 0);
+  nowLine.style.top = '36px';
+  nowLine.style.height = totalH + 'px';
+  chartArea.appendChild(nowLine);
+}
+
+function applyBarStyle(el, cls) {
+  const map = {
+    complete:  ['var(--complete-bg)',  'var(--complete)',  'var(--complete-b)'],
+    missed:    ['var(--missed-bg)',    'var(--missed)',    'var(--missed-b)'],
+    blocked:   ['var(--blocked-bg)',   'var(--blocked)',   'var(--blocked-b)'],
+    pending:   ['var(--pending-bg)',   'var(--pending)',   'var(--pending-b)'],
+    lutnick:   ['var(--lutnick-bg)',   'var(--lutnick)',   'var(--lutnick-b)'],
+    holiday:   ['var(--holiday-bg)',   'var(--holiday)',   'var(--holiday-b)'],
+    congress:  ['var(--congress-bg)',  'var(--congress)',  'var(--congress-b)'],
+  };
+  const [bg, fg, border] = map[cls] || map.congress;
+  el.style.background = bg;
+  el.style.color = fg;
+  el.style.borderColor = border;
+}
+
+function applyDotStyle(el, cls) {
+  const map = {
+    complete: 'var(--complete)',
+    missed:   'var(--missed)',
+    blocked:  'var(--blocked)',
+    pending:  'var(--pending)',
+    lutnick:  'var(--lutnick)',
+    holiday:  'var(--holiday)',
+    congress: 'var(--congress)',
+  };
+  el.style.background = map[cls] || 'var(--text3)';
+}
+
+// ── Tooltip ────────────────────────────────────────────────────────────────
+const tt = document.getElementById('tooltip');
+
+function attachTooltip(el, ev) {
+  el.addEventListener('mouseenter', e => showTT(e, ev));
+  el.addEventListener('mousemove',  e => moveTT(e));
+  el.addEventListener('mouseleave', hideTT);
+}
+
+function showTT(e, ev) {
+  document.getElementById('tt-status').textContent = ev.status || '';
+  document.getElementById('tt-status').style.background = ev.statusBg || 'var(--bg3)';
+  document.getElementById('tt-status').style.color      = ev.statusColor || 'var(--text2)';
+  document.getElementById('tt-status').style.borderColor = ev.statusColor || 'var(--border)';
+  document.getElementById('tt-title').textContent = ev.title || '';
+  document.getElementById('tt-date').textContent  = ev.date  || '';
+  document.getElementById('tt-body').textContent  = ev.body  || '';
+  const q = document.getElementById('tt-quote');
+  if (ev.quote) { q.textContent = ev.quote; q.style.display = 'block'; }
+  else { q.style.display = 'none'; }
+  const s = document.getElementById('tt-source');
+  s.textContent = ev.source ? 'Source: ' + ev.source : '';
+  tt.classList.add('show');
+  moveTT(e);
+}
+function moveTT(e) {
+  let x = e.clientX + 16, y = e.clientY + 16;
+  if (x + 310 > window.innerWidth)  x = e.clientX - 316;
+  if (y + 280 > window.innerHeight) y = e.clientY - 200;
+  tt.style.left = x + 'px';
+  tt.style.top  = y + 'px';
+}
+function hideTT() { tt.classList.remove('show'); }
+
+// ── Init ───────────────────────────────────────────────────────────────────
+build();
+</script>
+</body>
+</html>
