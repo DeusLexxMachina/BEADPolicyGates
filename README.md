@@ -60,4 +60,4 @@ Then visit `http://localhost:8000`.
 
 Licensed under [Creative Commons Attribution 4.0 International](https://creativecommons.org/licenses/by/4.0/). Share and adapt with attribution.
 
-Authored as Dr. Alexis Schrubbe (Lex), published under the DeusLexxMachina identity. This is independent policy analysis and is not legal advice; confirm any operational decision against current NTIA guidance and your Federal Program Officer.
+Published by DeusLexxMachina. This is independent policy analysis and is not legal advice; confirm any operational decision against current NTIA guidance and your Federal Program Officer.
